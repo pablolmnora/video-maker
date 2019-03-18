@@ -2,10 +2,10 @@ const algorithmia = require('algorithmia')
 const algorithmiaApiKey = require('../credentials/algorithmia').apiKey
 const sentenceBoundaryDetection = require('sbd')
 
-const watsonApiKey = require('../credentials/watson-nlu').apiKey
+const watsonApiKey = require('../credentials/watson-nlu').apikey
 const NaturalLanguageUnderstandingV1 = require('watson-developer-cloud/natural-language-understanding/v1')
 
-const nlu = NaturalLanguageUnderstandingV1({
+const nlu = new NaturalLanguageUnderstandingV1({
   iam_apikey: watsonApiKey,
   version: '2018-04-05',
   url: 'https://gateway.watsonplatform.net/natural-language-understanding/api/'
@@ -16,6 +16,7 @@ async function robot(content) {
   sanitizeContent(content)
   breakContentIntoSentences(content)
   limitMaximumSentences(content)
+  await fetchKeywordsOfAllSentences(content)
 
   async function fetchContentFromWikipedia(content) {
     const algorithmiaAuthenticated = algorithmia(algorithmiaApiKey)
@@ -37,7 +38,7 @@ async function robot(content) {
 
       const withoutBlankLinesAndMarkdown = allLines.filter(line => {
         const lineTrimmed = line.trim()
-        return lineTrimmed.length !== 0 || !lineTrimmed.startsWith('=')
+        return lineTrimmed.length !== 0 && !lineTrimmed.startsWith('=')
       })
 
       return withoutBlankLinesAndMarkdown.join(' ')
@@ -62,7 +63,7 @@ async function robot(content) {
   }
 
   function limitMaximumSentences(content) {
-    content.sentences = content.sentences(slice(0, content.maximumSentences))
+    content.sentences = content.sentences.slice(0, content.maximumSentences)
   }
 
   async function fetchKeywordsOfAllSentences(content) {
